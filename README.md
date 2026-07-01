@@ -31,18 +31,30 @@ That matters because the alternative — finding out your real worst case during
 2. Your real cap is whatever your worst-case formula says is safe at your maximum input, not whatever number felt conservative in a meeting.
 3. "Verified against the deployed binary" is the bar. A number from a synthetic benchmark that never touched your actual compiled program isn't a bound, it's a guess with better production values.
 
-## Try it
+## This isn't just a Python script
 
-`src/affine_envelope.py` is a small, dependency-free reference implementation of the fit-and-verify step above — the same shape we run internally, with illustrative numbers instead of Skew's actual measured coefficients:
-
-```
-python3 src/affine_envelope.py
-```
-
-`tests/test_affine_envelope.py` checks the part that actually matters: that it accepts a genuinely affine series and rejects one that only looks like it is.
+A fit-and-verify function on its own doesn't prove anything about Solana — it's just arithmetic. So `demo-program/` is a small, from-scratch Solana program (not Skew's settlement engine — a new, minimal one, written for this repo) with one instruction whose cost scales with a count `n`, and a `mollusk-svm` harness that loads the actual compiled BPF binary and measures real `compute_units_consumed` for every `n` from 1 to 49 — not a handful of spot-checked points.
 
 ```
-python3 tests/test_affine_envelope.py
+cd demo-program/program && cargo build-sbf   # produces the real .so
+cd ../harness && cargo run --release         # runs it through mollusk-svm, prints n,cu for every n
 ```
 
-We're not open-sourcing the settlement engine itself here — this is the methodology, not the implementation. If you want to talk about the parts we didn't include, find us at [skew.deals](https://skew.deals).
+That run is what produced `real_measurements.csv` — 49 lines, one real measurement per line. The harness itself asserts the slope holds at every consecutive step as it measures. Then `verify_real_measurements.py` re-derives the same model independently, in a different language, from the raw CSV:
+
+```
+python3 verify_real_measurements.py
+```
+
+Two independent implementations, agreeing on the same real BPF-execution data: `cost(n) = 7 * n + 342`, zero residual across all 49 points. That's the actual technique, not a description of it — clone this, build it yourself, and check our arithmetic against your own run.
+
+## Try the reference implementation on its own
+
+`src/affine_envelope.py` is the same fit-and-verify logic used above, as a small dependency-free module you can read end to end:
+
+```
+python3 src/affine_envelope.py       # illustrative numbers
+python3 tests/test_affine_envelope.py  # confirms it accepts a real affine series and rejects a fake one
+```
+
+We're not open-sourcing Skew's settlement engine itself here — that program is a purpose-built demo, not our production code. If you want to talk about the parts we didn't include, find us at [skew.deals](https://skew.deals).
