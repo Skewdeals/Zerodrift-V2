@@ -31,4 +31,18 @@ That matters because the alternative — finding out your real worst case during
 2. Your real cap is whatever your worst-case formula says is safe at your maximum input, not whatever number felt conservative in a meeting.
 3. "Verified against the deployed binary" is the bar. A number from a synthetic benchmark that never touched your actual compiled program isn't a bound, it's a guess with better production values.
 
+## Try it
+
+`src/affine_envelope.py` is a small, dependency-free reference implementation of the fit-and-verify step above — the same shape we run internally, with illustrative numbers instead of Skew's actual measured coefficients:
+
+```
+python3 src/affine_envelope.py
+```
+
+`tests/test_affine_envelope.py` checks the part that actually matters: that it accepts a genuinely affine series and rejects one that only looks like it is.
+
+```
+python3 tests/test_affine_envelope.py
+```
+
 We're not open-sourcing the settlement engine itself here — this is the methodology, not the implementation. If you want to talk about the parts we didn't include, find us at [skew.deals](https://skew.deals).
